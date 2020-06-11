@@ -24,6 +24,26 @@ type DBDriver interface {
 	Close() error
 	Query() (*sql.Rows, error)
 	Exec() (sql.Result, error)
+	QueryMap(string, map[string]interface{}) ([]map[string]interface{}, error)
+	FindById(string, int, string) (map[string]interface{}, error)
+	FindOne(string, map[string]interface{}, string) (map[string]interface{}, error)
+	Exists(string, map[string]interface{}) bool
+	Count(string, map[string]interface{}) (int, error)
+	GetList(string, map[string]interface{}, string) ([]map[string]interface{}, error)
+	GetPage(string, map[string]interface{}, string, int, int) ([]map[string]interface{}, *Page, error)
+	Insert(string, map[string]interface{}) (int64, error)
+	Update(string, map[string]interface{}, map[string]interface{}) (int64, error)
+	Save(string, map[string]interface{}) (int64, error)
+	Delete(string, map[string]interface{}) (int64, error)
+	DeleteById(string, int) (int64, error)
+	Begin() error
+	RollBack() error
+	Commit() error
+	QueryTx(string, ...interface{}) (*sql.Rows, error)
+	ExecTx(string, ...interface{}) (sql.Result, error)
+	GetInsertSql(string, map[string]interface{}) (string, error)
+	GetUpdateSql(string, map[string]interface{}, map[string]interface{}) (string, error)
+	WhereFromQuery(map[string]interface{}) (string, error)
 }
 
 func checkOrderBy(orderBy string) bool {
