@@ -50,16 +50,19 @@ func (db *PostgresDriver) Close() error {
 func (db *PostgresDriver) Query(query string, args ...interface{}) (*sql.Rows, error) {
 	return db.DB.Query(query, args...)
 }
+func (db *PostgresDriver) Exec(query string, args ...interface{}) (sql.Result, error) {
+	return db.DB.Exec(query, args...)
+}
 func (db *PostgresDriver) QueryMap(tableName string, query map[string]interface{}) ([]map[string]interface{}, error) {
 	s := "select * from " + tableName + " "
-	where, _ := db.WhereFromQuery(query)
+	where, _ := WhereFromQuery(query)
 	s += " " + where
 	rows, err := db.Query(s)
 	if err != nil {
 		return []map[string]interface{}{}, err
 	}
 
-	return db.returnResults(rows)
+	return ReturnListFromResults(rows)
 }
 func (db *PostgresDriver) FindById(tableName string, id int, orderBy string) (map[string]interface{}, error) {
 	s := "select * from " + tableName
@@ -73,25 +76,25 @@ func (db *PostgresDriver) FindById(tableName string, id int, orderBy string) (ma
 
 		return nil, err
 	}
-	return db.returnResult(rows)
+	return ReturnMapFromResult(rows)
 }
 func (db *PostgresDriver) FindOne(tableName string, query map[string]interface{}, orderBy string) (map[string]interface{}, error) {
 	s := "select * from " + tableName + " "
 	if !CheckOrderBy(orderBy) {
 		orderBy = ""
 	}
-	where, _ := db.WhereFromQuery(query)
+	where, _ := WhereFromQuery(query)
 	rows, err := db.DB.Query(s + where)
 	if err != nil {
 		return nil, err
 	}
-	return db.returnResult(rows)
+	return ReturnMapFromResult(rows)
 }
 
 func (db *PostgresDriver) Exists(tableName string, query map[string]interface{}) bool {
 	var count = 0
 	s := "select count(1) as number from " + tableName + " "
-	where, _ := db.WhereFromQuery(query)
+	where, _ := WhereFromQuery(query)
 	rows, err := db.DB.Query(s + where)
 	if err != nil {
 		return false
@@ -105,7 +108,7 @@ func (db *PostgresDriver) Exists(tableName string, query map[string]interface{})
 func (db *PostgresDriver) Count(tableName string, query map[string]interface{}) (int, error) {
 	var count = 0
 	s := "select count(1) as number from " + tableName + " "
-	where, _ := db.WhereFromQuery(query)
+	where, _ := WhereFromQuery(query)
 	rows, err := db.DB.Query(s + where)
 	if err != nil {
 		return 0, err
@@ -120,12 +123,12 @@ func (db *PostgresDriver) GetList(tableName string, query map[string]interface{}
 	if !CheckOrderBy(orderBy) {
 		orderBy = ""
 	}
-	where, _ := db.WhereFromQuery(query)
+	where, _ := WhereFromQuery(query)
 	rows, err := db.DB.Query(s + where)
 	if err != nil {
 		return nil, err
 	}
-	return db.returnResults(rows)
+	return ReturnListFromResults(rows)
 }
 func (db *PostgresDriver) GetPage(tableName string, query map[string]interface{}, orderBy string, page, size int) ([]map[string]interface{}, *Page, error) {
 	total, _ := db.Count(tableName, query)
@@ -143,7 +146,7 @@ func (db *PostgresDriver) GetPage(tableName string, query map[string]interface{}
 	if !CheckOrderBy(orderBy) {
 		orderBy = ""
 	}
-	where, _ := db.WhereFromQuery(query)
+	where, _ := WhereFromQuery(query)
 	sql2 := s + where
 	if orderBy != "" {
 		sql2 += "order by " + orderBy
@@ -153,24 +156,22 @@ func (db *PostgresDriver) GetPage(tableName string, query map[string]interface{}
 	if err != nil {
 		return nil, nil, err
 	}
-	result, err := db.returnResults(rows)
+	result, err := ReturnListFromResults(rows)
 	return result, &Page{First: 1, Prev: prev, Page: page, Next: next, Last: last, Size: size, Total: total}, nil
 }
-func (db *PostgresDriver) Exec(query string, args ...interface{}) (sql.Result, error) {
-	return db.DB.Exec(query, args...)
-}
+
 func (db *PostgresDriver) Insert(tableName string, post map[string]interface{}) (int64, error) {
 	var newId int64
-	s, _ := db.GetInsertSql(tableName, post)
+	s, _ := GetInsertSql(tableName, post)
 	fmt.Println(s)
-	err := db.DB.QueryRow(s).Scan(&newId)
+	err := db.DB.QueryRow(s + "  returning id").Scan(&newId)
 	if err != nil {
 		return 0, err
 	}
 	return newId, nil
 }
 func (db *PostgresDriver) Update(tableName string, post map[string]interface{}, query map[string]interface{}) (int64, error) {
-	s, _ := db.GetUpdateSQL(tableName, post, query)
+	s, _ := GetUpdateSQL(tableName, post, query)
 	exec, err := db.DB.Exec(s)
 	if err != nil {
 		return 0, err
@@ -187,7 +188,7 @@ func (db *PostgresDriver) Save(tableName string, post map[string]interface{}) (i
 	}
 }
 func (db *PostgresDriver) Delete(tableName string, query map[string]interface{}) (int64, error) {
-	where, _ := db.WhereFromQuery(query)
+	where, _ := WhereFromQuery(query)
 	if where != "" {
 		s := "delete from " + tableName + where
 		exec, err := db.DB.Exec(s)
@@ -233,95 +234,4 @@ func (db *PostgresDriver) QueryTX(query string, args ...interface{}) (*sql.Rows,
 }
 func (db *PostgresDriver) ExecTX(query string, args ...interface{}) (sql.Result, error) {
 	return db.SQLTX.Exec(query, args...)
-}
-func (db *PostgresDriver) returnResult(rows *sql.Rows) (map[string]interface{}, error) {
-	var err error
-	columns, _ := rows.Columns()
-	scanArgs := make([]interface{}, len(columns))
-	values := make([]interface{}, len(columns))
-	for i := range values {
-		scanArgs[i] = &values[i]
-	}
-	rowsMap := make([]map[string]interface{}, 0, 10)
-	for rows.Next() {
-		err = rows.Scan(scanArgs...)
-		rowMap := make(map[string]interface{})
-		for i, col := range values {
-			if col != nil {
-				rowMap[columns[i]] = col
-			}
-		}
-		rowsMap = append(rowsMap, rowMap)
-	}
-	if err = rows.Err(); err != nil {
-		return map[string]interface{}{}, err
-	}
-	rows.Close()
-	return rowsMap[0], nil
-}
-func (db *PostgresDriver) returnResults(rows *sql.Rows) ([]map[string]interface{}, error) {
-	var err error
-	columns, _ := rows.Columns()
-	scanArgs := make([]interface{}, len(columns))
-	values := make([]interface{}, len(columns))
-	for i := range values {
-		scanArgs[i] = &values[i]
-	}
-	rowsMap := make([]map[string]interface{}, 0, 10)
-	for rows.Next() {
-		err = rows.Scan(scanArgs...)
-		rowMap := make(map[string]interface{})
-		for i, col := range values {
-			if col != nil {
-				fmt.Println(col)
-				rowMap[columns[i]] = col
-			}
-		}
-		rowsMap = append(rowsMap, rowMap)
-	}
-	if err = rows.Err(); err != nil {
-		return []map[string]interface{}{}, err
-	}
-	rows.Close()
-	return rowsMap, nil
-}
-func (db *PostgresDriver) GetInsertSql(tableName string, post map[string]interface{}) (string, error) {
-	s, columns, values := "", "", ""
-	split := ""
-	for k, v := range post {
-		if IsSimpleType(v) {
-			columns += split + k
-			values += split + SqlQuote(v)
-			split = ", "
-		}
-	}
-	if columns != "" {
-		s = "insert into " + tableName + "(" + columns + ") values (" + values + ") returning id"
-	}
-
-	return s, nil
-}
-func (db *PostgresDriver) GetUpdateSQL(tableName string, post map[string]interface{}, query map[string]interface{}) (string, error) {
-	s := ""
-	split := "update " + tableName + " set "
-	for k, v := range post {
-		if IsSimpleType(v) {
-			s += split + " " + k + "=" + SqlQuote(v)
-			split = ", "
-		}
-	}
-	where, _ := db.WhereFromQuery(query)
-	return s + where, nil
-}
-func (db *PostgresDriver) WhereFromQuery(query map[string]interface{}) (string, error) {
-	s := ""
-	split := " where "
-	for k, v := range query {
-		if IsSimpleType(v) {
-			s += split + " " + k + "=" + SqlQuote(v)
-			split = " and "
-		}
-	}
-
-	return s, nil
 }

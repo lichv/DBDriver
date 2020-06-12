@@ -53,14 +53,14 @@ func (db *MysqlDriver) Exec(query string, args ...interface{}) (sql.Result, erro
 }
 func (db *MysqlDriver) QueryMap(tableName string, query map[string]interface{}) ([]map[string]interface{}, error) {
 	s := "select * from " + tableName + " "
-	where, _ := db.WhereFromQuery(query)
+	where, _ := WhereFromQuery(query)
 	s += " " + where
 	rows, err := db.Query(s)
 	if err != nil {
 		return []map[string]interface{}{}, err
 	}
 
-	return db.returnResults(rows)
+	return ReturnListFromResults(rows)
 }
 func (db *MysqlDriver) FindById(tableName string, id int, orderBy string) (map[string]interface{}, error) {
 	s := "select * from " + tableName
@@ -74,25 +74,25 @@ func (db *MysqlDriver) FindById(tableName string, id int, orderBy string) (map[s
 
 		return nil, err
 	}
-	return db.returnResult(rows)
+	return ReturnMapFromResult(rows)
 }
 func (db *MysqlDriver) FindOne(tableName string, query map[string]interface{}, orderBy string) (map[string]interface{}, error) {
 	s := "select * from " + tableName + " "
 	if !CheckOrderBy(orderBy) {
 		orderBy = ""
 	}
-	where, _ := db.WhereFromQuery(query)
+	where, _ := WhereFromQuery(query)
 	rows, err := db.DB.Query(s + where)
 	if err != nil {
 		return nil, err
 	}
-	return db.returnResult(rows)
+	return ReturnMapFromResult(rows)
 }
 
 func (db *MysqlDriver) Exists(tableName string, query map[string]interface{}) bool {
 	var count = 0
 	s := "select count(1) as number from " + tableName + " "
-	where, _ := db.WhereFromQuery(query)
+	where, _ := WhereFromQuery(query)
 	rows, err := db.DB.Query(s + where)
 	if err != nil {
 		return false
@@ -106,7 +106,7 @@ func (db *MysqlDriver) Exists(tableName string, query map[string]interface{}) bo
 func (db *MysqlDriver) Count(tableName string, query map[string]interface{}) (int, error) {
 	var count = 0
 	s := "select count(1) as number from " + tableName + " "
-	where, _ := db.WhereFromQuery(query)
+	where, _ := WhereFromQuery(query)
 	rows, err := db.DB.Query(s + where)
 	if err != nil {
 		return 0, err
@@ -121,12 +121,12 @@ func (db *MysqlDriver) GetList(tableName string, query map[string]interface{}, o
 	if !CheckOrderBy(orderBy) {
 		orderBy = ""
 	}
-	where, _ := db.WhereFromQuery(query)
+	where, _ := WhereFromQuery(query)
 	rows, err := db.DB.Query(s + where)
 	if err != nil {
 		return nil, err
 	}
-	return db.returnResults(rows)
+	return ReturnListFromResults(rows)
 }
 func (db *MysqlDriver) GetPage(tableName string, query map[string]interface{}, orderBy string, page, size int) ([]map[string]interface{}, *Page, error) {
 	total, _ := db.Count(tableName, query)
@@ -144,7 +144,7 @@ func (db *MysqlDriver) GetPage(tableName string, query map[string]interface{}, o
 	if !CheckOrderBy(orderBy) {
 		orderBy = ""
 	}
-	where, _ := db.WhereFromQuery(query)
+	where, _ := WhereFromQuery(query)
 	sql2 := s + where
 	if orderBy != "" {
 		sql2 += "order by " + orderBy
@@ -154,12 +154,12 @@ func (db *MysqlDriver) GetPage(tableName string, query map[string]interface{}, o
 	if err != nil {
 		return nil, nil, err
 	}
-	result, err := db.returnResults(rows)
+	result, err := ReturnListFromResults(rows)
 	return result, &Page{First: 1, Prev: prev, Page: page, Next: next, Last: last, Size: size, Total: total}, nil
 }
 
 func (db *MysqlDriver) Insert(tableName string, post map[string]interface{}) (int64, error) {
-	s, _ := db.GetInsertSql(tableName, post)
+	s, _ := GetInsertSql(tableName, post)
 	exec, err := db.DB.Exec(s)
 	if err != nil {
 		return 0, err
@@ -167,7 +167,7 @@ func (db *MysqlDriver) Insert(tableName string, post map[string]interface{}) (in
 	return exec.LastInsertId()
 }
 func (db *MysqlDriver) Update(tableName string, post map[string]interface{}, query map[string]interface{}) (int64, error) {
-	s, _ := db.GetUpdateSQL(tableName, post, query)
+	s, _ := GetUpdateSQL(tableName, post, query)
 	exec, err := db.DB.Exec(s)
 	if err != nil {
 		return 0, err
@@ -184,7 +184,7 @@ func (db *MysqlDriver) Save(tableName string, post map[string]interface{}) (int6
 	}
 }
 func (db *MysqlDriver) Delete(tableName string, query map[string]interface{}) (int64, error) {
-	where, _ := db.WhereFromQuery(query)
+	where, _ := WhereFromQuery(query)
 	if where != "" {
 		s := "delete from " + tableName + where
 		exec, err := db.DB.Exec(s)
@@ -230,94 +230,4 @@ func (db *MysqlDriver) QueryTX(query string, args ...interface{}) (*sql.Rows, er
 }
 func (db *MysqlDriver) ExecTX(query string, args ...interface{}) (sql.Result, error) {
 	return db.SQLTX.Exec(query, args...)
-}
-func (db *MysqlDriver) returnResult(rows *sql.Rows) (map[string]interface{}, error) {
-	var err error
-	columns, _ := rows.Columns()
-	scanArgs := make([]interface{}, len(columns))
-	values := make([]interface{}, len(columns))
-	for i := range values {
-		scanArgs[i] = &values[i]
-	}
-	rowsMap := make([]map[string]interface{}, 0, 10)
-	for rows.Next() {
-		err = rows.Scan(scanArgs...)
-		rowMap := make(map[string]interface{})
-		for i, col := range values {
-			if col != nil {
-				rowMap[columns[i]] = col
-			}
-		}
-		rowsMap = append(rowsMap, rowMap)
-	}
-	if err = rows.Err(); err != nil {
-		return map[string]interface{}{}, err
-	}
-	rows.Close()
-	return rowsMap[0], nil
-}
-func (db *MysqlDriver) returnResults(rows *sql.Rows) ([]map[string]interface{}, error) {
-	var err error
-	columns, _ := rows.Columns()
-	scanArgs := make([]interface{}, len(columns))
-	values := make([]interface{}, len(columns))
-	for i := range values {
-		scanArgs[i] = &values[i]
-	}
-	rowsMap := make([]map[string]interface{}, 0, 10)
-	for rows.Next() {
-		err = rows.Scan(scanArgs...)
-		rowMap := make(map[string]interface{})
-		for i, col := range values {
-			if col != nil {
-				rowMap[columns[i]] = col
-			}
-		}
-		rowsMap = append(rowsMap, rowMap)
-	}
-	if err = rows.Err(); err != nil {
-		return []map[string]interface{}{}, err
-	}
-	rows.Close()
-	return rowsMap, nil
-}
-func (db *MysqlDriver) GetInsertSql(tableName string, post map[string]interface{}) (string, error) {
-	s, colums, values := "", "", ""
-	split := ""
-	for k, v := range post {
-		if IsSimpleType(v) {
-			colums += split + k
-			s += split + SqlQuote(v)
-			split = ", "
-		}
-	}
-	if colums != "" {
-		s = "insert into " + tableName + "(" + colums + ") values (" + values + ")"
-	}
-
-	return s, nil
-}
-func (db *MysqlDriver) GetUpdateSQL(tableName string, post map[string]interface{}, query map[string]interface{}) (string, error) {
-	s := ""
-	split := "update " + tableName + " set "
-	for k, v := range post {
-		if IsSimpleType(v) {
-			s += split + " " + k + "=" + SqlQuote(v)
-			split = ", "
-		}
-	}
-	where, _ := db.WhereFromQuery(query)
-	return s + where, nil
-}
-func (db *MysqlDriver) WhereFromQuery(query map[string]interface{}) (string, error) {
-	s := ""
-	split := " where "
-	for k, v := range query {
-		if IsSimpleType(v) {
-			s += split + " " + k + "=" + SqlQuote(v)
-			split = " and "
-		}
-	}
-
-	return s, nil
 }
