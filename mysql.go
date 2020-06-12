@@ -42,27 +42,32 @@ func (db *MysqlDriver) Open() (err error) {
 	db.DB.SetConnMaxLifetime(time.Second * 10)
 	return nil
 }
+
 func (db *MysqlDriver) Close() error {
 	return db.DB.Close()
 }
+
 func (db *MysqlDriver) Query(query string, args ...interface{}) (*sql.Rows, error) {
 	return db.DB.Query(query, args...)
 }
+
 func (db *MysqlDriver) Exec(query string, args ...interface{}) (sql.Result, error) {
 	return db.DB.Exec(query, args...)
 }
-func (db *MysqlDriver) QueryMap(tableName string, query map[string]interface{}) ([]map[string]interface{}, error) {
+
+func (db *MysqlDriver) QueryMap(tableName string, query map[string]interface{}) (*sql.Rows, error) {
 	s := "select * from " + tableName + " "
 	where, _ := WhereFromQuery(query)
 	s += " " + where
 	rows, err := db.Query(s)
 	if err != nil {
-		return []map[string]interface{}{}, err
+		return nil, err
 	}
 
-	return ReturnListFromResults(rows)
+	return rows,nil
 }
-func (db *MysqlDriver) FindById(tableName string, id int, orderBy string) (map[string]interface{}, error) {
+
+func (db *MysqlDriver) FindById(tableName string, id int, orderBy string) (*sql.Rows, error) {
 	s := "select * from " + tableName
 	if !CheckOrderBy(orderBy) {
 		orderBy = ""
@@ -74,9 +79,10 @@ func (db *MysqlDriver) FindById(tableName string, id int, orderBy string) (map[s
 
 		return nil, err
 	}
-	return ReturnMapFromResult(rows)
+	return rows,nil
 }
-func (db *MysqlDriver) FindOne(tableName string, query map[string]interface{}, orderBy string) (map[string]interface{}, error) {
+
+func (db *MysqlDriver) FindOne(tableName string, query map[string]interface{}, orderBy string) (*sql.Rows, error) {
 	s := "select * from " + tableName + " "
 	if !CheckOrderBy(orderBy) {
 		orderBy = ""
@@ -86,37 +92,10 @@ func (db *MysqlDriver) FindOne(tableName string, query map[string]interface{}, o
 	if err != nil {
 		return nil, err
 	}
-	return ReturnMapFromResult(rows)
+	return rows,nil
 }
 
-func (db *MysqlDriver) Exists(tableName string, query map[string]interface{}) bool {
-	var count = 0
-	s := "select count(1) as number from " + tableName + " "
-	where, _ := WhereFromQuery(query)
-	rows, err := db.DB.Query(s + where)
-	if err != nil {
-		return false
-	}
-	defer rows.Close()
-	rows.Next()
-	_ = rows.Scan(&count)
-	return count > 0
-}
-
-func (db *MysqlDriver) Count(tableName string, query map[string]interface{}) (int, error) {
-	var count = 0
-	s := "select count(1) as number from " + tableName + " "
-	where, _ := WhereFromQuery(query)
-	rows, err := db.DB.Query(s + where)
-	if err != nil {
-		return 0, err
-	}
-	defer rows.Close()
-	rows.Next()
-	_ = rows.Scan(&count)
-	return count, nil
-}
-func (db *MysqlDriver) GetList(tableName string, query map[string]interface{}, orderBy string) ([]map[string]interface{}, error) {
+func (db *MysqlDriver) GetList(tableName string, query map[string]interface{}, orderBy string) (*sql.Rows, error) {
 	s := "select * from " + tableName + " "
 	if !CheckOrderBy(orderBy) {
 		orderBy = ""
@@ -126,9 +105,10 @@ func (db *MysqlDriver) GetList(tableName string, query map[string]interface{}, o
 	if err != nil {
 		return nil, err
 	}
-	return ReturnListFromResults(rows)
+	return rows,nil
 }
-func (db *MysqlDriver) GetPage(tableName string, query map[string]interface{}, orderBy string, page, size int) ([]map[string]interface{}, *Page, error) {
+
+func (db *MysqlDriver) GetPage(tableName string, query map[string]interface{}, orderBy string, page, size int) (*sql.Rows, *Page, error) {
 	total, _ := db.Count(tableName, query)
 	last := total/size + 1
 	prev := 1
@@ -154,8 +134,29 @@ func (db *MysqlDriver) GetPage(tableName string, query map[string]interface{}, o
 	if err != nil {
 		return nil, nil, err
 	}
-	result, err := ReturnListFromResults(rows)
-	return result, &Page{First: 1, Prev: prev, Page: page, Next: next, Last: last, Size: size, Total: total}, nil
+	return rows, &Page{First: 1, Prev: prev, Page: page, Next: next, Last: last, Size: size, Total: total}, nil
+}
+
+func (db *MysqlDriver) Count(tableName string, query map[string]interface{}) (int, error) {
+	var count = 0
+	s := "select count(1) as number from " + tableName + " "
+	where, _ := WhereFromQuery(query)
+	rows, err := db.DB.Query(s + where)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+	rows.Next()
+	_ = rows.Scan(&count)
+	return count, nil
+}
+
+func (db *MysqlDriver) Exists(tableName string, query map[string]interface{}) bool {
+	c, err := db.Count(tableName, query)
+	if err != nil {
+		return false
+	}
+	return c > 0
 }
 
 func (db *MysqlDriver) Insert(tableName string, post map[string]interface{}) (int64, error) {
@@ -166,6 +167,7 @@ func (db *MysqlDriver) Insert(tableName string, post map[string]interface{}) (in
 	}
 	return exec.LastInsertId()
 }
+
 func (db *MysqlDriver) Update(tableName string, post map[string]interface{}, query map[string]interface{}) (int64, error) {
 	s, _ := GetUpdateSQL(tableName, post, query)
 	exec, err := db.DB.Exec(s)
@@ -174,6 +176,7 @@ func (db *MysqlDriver) Update(tableName string, post map[string]interface{}, que
 	}
 	return exec.RowsAffected()
 }
+
 func (db *MysqlDriver) Save(tableName string, post map[string]interface{}) (int64, error) {
 	id, ok := post["id"]
 	if ok {
@@ -183,6 +186,7 @@ func (db *MysqlDriver) Save(tableName string, post map[string]interface{}) (int6
 		return db.Insert(tableName, post)
 	}
 }
+
 func (db *MysqlDriver) Delete(tableName string, query map[string]interface{}) (int64, error) {
 	where, _ := WhereFromQuery(query)
 	if where != "" {
@@ -196,6 +200,7 @@ func (db *MysqlDriver) Delete(tableName string, query map[string]interface{}) (i
 		return 0, nil
 	}
 }
+
 func (db *MysqlDriver) DeleteById(tableName string, id int) (int64, error) {
 	if id != 0 {
 		s := "delete from " + tableName + " where id = ?"
@@ -208,6 +213,7 @@ func (db *MysqlDriver) DeleteById(tableName string, id int) (int64, error) {
 		return 0, nil
 	}
 }
+
 func (db *MysqlDriver) Begin() error {
 	err := db.DB.Ping()
 	if err != nil {
@@ -219,15 +225,19 @@ func (db *MysqlDriver) Begin() error {
 	}
 	return nil
 }
+
 func (db *MysqlDriver) RollBack() error {
 	return db.SQLTX.Rollback()
 }
+
 func (db *MysqlDriver) Commit() error {
 	return db.SQLTX.Commit()
 }
+
 func (db *MysqlDriver) QueryTX(query string, args ...interface{}) (*sql.Rows, error) {
 	return db.SQLTX.Query(query, args...)
 }
+
 func (db *MysqlDriver) ExecTX(query string, args ...interface{}) (sql.Result, error) {
 	return db.SQLTX.Exec(query, args...)
 }

@@ -17,9 +17,7 @@ type PostgresDriver struct {
 }
 
 func InitPostgreDriver(host string, port int, user, password, dbname string) *PostgresDriver {
-	dataSourceName := fmt.Sprintf("host=%s port=%d user=%s "+
-		"password=%s dbname=%s sslmode=disable",
-		host, port, user, password, dbname)
+	dataSourceName := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
 	db := &PostgresDriver{
 		DriverName:     "postgres",
 		DataSourceName: dataSourceName,
@@ -44,27 +42,32 @@ func (db *PostgresDriver) Open() (err error) {
 	db.DB.SetConnMaxLifetime(time.Second * 10)
 	return nil
 }
+
 func (db *PostgresDriver) Close() error {
 	return db.DB.Close()
 }
+
 func (db *PostgresDriver) Query(query string, args ...interface{}) (*sql.Rows, error) {
 	return db.DB.Query(query, args...)
 }
+
 func (db *PostgresDriver) Exec(query string, args ...interface{}) (sql.Result, error) {
 	return db.DB.Exec(query, args...)
 }
-func (db *PostgresDriver) QueryMap(tableName string, query map[string]interface{}) ([]map[string]interface{}, error) {
+
+func (db *PostgresDriver) QueryMap(tableName string, query map[string]interface{}) (*sql.Rows, error) {
 	s := "select * from " + tableName + " "
 	where, _ := WhereFromQuery(query)
 	s += " " + where
 	rows, err := db.Query(s)
 	if err != nil {
-		return []map[string]interface{}{}, err
+		return nil, err
 	}
 
-	return ReturnListFromResults(rows)
+	return rows,nil
 }
-func (db *PostgresDriver) FindById(tableName string, id int, orderBy string) (map[string]interface{}, error) {
+
+func (db *PostgresDriver) FindById(tableName string, id int, orderBy string) (*sql.Rows, error) {
 	s := "select * from " + tableName
 	if !CheckOrderBy(orderBy) {
 		orderBy = ""
@@ -76,9 +79,10 @@ func (db *PostgresDriver) FindById(tableName string, id int, orderBy string) (ma
 
 		return nil, err
 	}
-	return ReturnMapFromResult(rows)
+	return rows,nil
 }
-func (db *PostgresDriver) FindOne(tableName string, query map[string]interface{}, orderBy string) (map[string]interface{}, error) {
+
+func (db *PostgresDriver) FindOne(tableName string, query map[string]interface{}, orderBy string) (*sql.Rows, error) {
 	s := "select * from " + tableName + " "
 	if !CheckOrderBy(orderBy) {
 		orderBy = ""
@@ -88,37 +92,11 @@ func (db *PostgresDriver) FindOne(tableName string, query map[string]interface{}
 	if err != nil {
 		return nil, err
 	}
-	return ReturnMapFromResult(rows)
+	return rows,nil
 }
 
-func (db *PostgresDriver) Exists(tableName string, query map[string]interface{}) bool {
-	var count = 0
-	s := "select count(1) as number from " + tableName + " "
-	where, _ := WhereFromQuery(query)
-	rows, err := db.DB.Query(s + where)
-	if err != nil {
-		return false
-	}
-	defer rows.Close()
-	rows.Next()
-	_ = rows.Scan(&count)
-	return count > 0
-}
 
-func (db *PostgresDriver) Count(tableName string, query map[string]interface{}) (int, error) {
-	var count = 0
-	s := "select count(1) as number from " + tableName + " "
-	where, _ := WhereFromQuery(query)
-	rows, err := db.DB.Query(s + where)
-	if err != nil {
-		return 0, err
-	}
-	defer rows.Close()
-	rows.Next()
-	_ = rows.Scan(&count)
-	return count, nil
-}
-func (db *PostgresDriver) GetList(tableName string, query map[string]interface{}, orderBy string) ([]map[string]interface{}, error) {
+func (db *PostgresDriver) GetList(tableName string, query map[string]interface{}, orderBy string) (*sql.Rows, error) {
 	s := "select * from " + tableName + " "
 	if !CheckOrderBy(orderBy) {
 		orderBy = ""
@@ -128,9 +106,10 @@ func (db *PostgresDriver) GetList(tableName string, query map[string]interface{}
 	if err != nil {
 		return nil, err
 	}
-	return ReturnListFromResults(rows)
+	return rows,nil
 }
-func (db *PostgresDriver) GetPage(tableName string, query map[string]interface{}, orderBy string, page, size int) ([]map[string]interface{}, *Page, error) {
+
+func (db *PostgresDriver) GetPage(tableName string, query map[string]interface{}, orderBy string, page, size int) (*sql.Rows, *Page, error) {
 	total, _ := db.Count(tableName, query)
 	last := total/size + 1
 	prev := 1
@@ -156,8 +135,29 @@ func (db *PostgresDriver) GetPage(tableName string, query map[string]interface{}
 	if err != nil {
 		return nil, nil, err
 	}
-	result, err := ReturnListFromResults(rows)
-	return result, &Page{First: 1, Prev: prev, Page: page, Next: next, Last: last, Size: size, Total: total}, nil
+	return rows, &Page{First: 1, Prev: prev, Page: page, Next: next, Last: last, Size: size, Total: total}, nil
+}
+
+func (db *PostgresDriver) Count(tableName string, query map[string]interface{}) (int, error) {
+	var count = 0
+	s := "select count(1) as number from " + tableName + " "
+	where, _ := WhereFromQuery(query)
+	rows, err := db.DB.Query(s + where)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+	rows.Next()
+	_ = rows.Scan(&count)
+	return count, nil
+}
+
+func (db *PostgresDriver) Exists(tableName string, query map[string]interface{}) bool {
+	c, err := db.Count(tableName, query)
+	if err != nil {
+		return false
+	}
+	return c > 0
 }
 
 func (db *PostgresDriver) Insert(tableName string, post map[string]interface{}) (int64, error) {
@@ -170,6 +170,7 @@ func (db *PostgresDriver) Insert(tableName string, post map[string]interface{}) 
 	}
 	return newId, nil
 }
+
 func (db *PostgresDriver) Update(tableName string, post map[string]interface{}, query map[string]interface{}) (int64, error) {
 	s, _ := GetUpdateSQL(tableName, post, query)
 	exec, err := db.DB.Exec(s)
@@ -178,6 +179,7 @@ func (db *PostgresDriver) Update(tableName string, post map[string]interface{}, 
 	}
 	return exec.RowsAffected()
 }
+
 func (db *PostgresDriver) Save(tableName string, post map[string]interface{}) (int64, error) {
 	id, ok := post["id"]
 	if ok {
@@ -187,6 +189,7 @@ func (db *PostgresDriver) Save(tableName string, post map[string]interface{}) (i
 		return db.Insert(tableName, post)
 	}
 }
+
 func (db *PostgresDriver) Delete(tableName string, query map[string]interface{}) (int64, error) {
 	where, _ := WhereFromQuery(query)
 	if where != "" {
@@ -200,6 +203,7 @@ func (db *PostgresDriver) Delete(tableName string, query map[string]interface{})
 		return 0, nil
 	}
 }
+
 func (db *PostgresDriver) DeleteById(tableName string, id int) (int64, error) {
 	if id != 0 {
 		s := "delete from " + tableName + " where id = ?"
@@ -212,6 +216,7 @@ func (db *PostgresDriver) DeleteById(tableName string, id int) (int64, error) {
 		return 0, nil
 	}
 }
+
 func (db *PostgresDriver) Begin() error {
 	err := db.DB.Ping()
 	if err != nil {
@@ -223,15 +228,19 @@ func (db *PostgresDriver) Begin() error {
 	}
 	return nil
 }
+
 func (db *PostgresDriver) RollBack() error {
 	return db.SQLTX.Rollback()
 }
+
 func (db *PostgresDriver) Commit() error {
 	return db.SQLTX.Commit()
 }
+
 func (db *PostgresDriver) QueryTX(query string, args ...interface{}) (*sql.Rows, error) {
 	return db.SQLTX.Query(query, args...)
 }
+
 func (db *PostgresDriver) ExecTX(query string, args ...interface{}) (sql.Result, error) {
 	return db.SQLTX.Exec(query, args...)
 }
