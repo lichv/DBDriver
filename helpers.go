@@ -46,7 +46,7 @@ type DBDriver interface {
 	WhereFromQuery(map[string]interface{}) (string, error)
 }
 
-func checkOrderBy(orderBy string) bool {
+func CheckOrderBy(orderBy string) bool {
 	compile := regexp.MustCompile("(?i)^([a-zA-Z]+? +?(desc|asc) *?)(,[a-zA-Z]+? +?(asc|desc) *?)*?$")
 	find := compile.FindStringIndex(orderBy)
 	if find != nil {
@@ -55,15 +55,15 @@ func checkOrderBy(orderBy string) bool {
 	return false
 }
 
-func sqlQuote(x interface{}) string {
-	if noSQLQuoteNeeded(x) {
+func SqlQuote(x interface{}) string {
+	if NoSqlQuoteNeeded(x) {
 		return fmt.Sprintf("%v", x)
 	} else {
 		return fmt.Sprintf("'%v'", x)
 	}
 }
 
-func isSimpleType(a interface{}) bool {
+func IsSimpleType(a interface{}) bool {
 	switch a.(type) {
 	case int, int8, int16, int32, int64:
 		return true
@@ -94,7 +94,7 @@ func isSimpleType(a interface{}) bool {
 
 	return false
 }
-func noSQLQuoteNeeded(a interface{}) bool {
+func NoSqlQuoteNeeded(a interface{}) bool {
 	switch a.(type) {
 	case int, int8, int16, int32, int64:
 		return true

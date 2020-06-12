@@ -64,7 +64,7 @@ func (db *MysqlDriver) QueryMap(tableName string, query map[string]interface{}) 
 }
 func (db *MysqlDriver) FindById(tableName string, id int, orderBy string) (map[string]interface{}, error) {
 	s := "select * from " + tableName
-	if !checkOrderBy(orderBy) {
+	if !CheckOrderBy(orderBy) {
 		orderBy = ""
 	}
 
@@ -78,7 +78,7 @@ func (db *MysqlDriver) FindById(tableName string, id int, orderBy string) (map[s
 }
 func (db *MysqlDriver) FindOne(tableName string, query map[string]interface{}, orderBy string) (map[string]interface{}, error) {
 	s := "select * from " + tableName + " "
-	if !checkOrderBy(orderBy) {
+	if !CheckOrderBy(orderBy) {
 		orderBy = ""
 	}
 	where, _ := db.WhereFromQuery(query)
@@ -118,7 +118,7 @@ func (db *MysqlDriver) Count(tableName string, query map[string]interface{}) (in
 }
 func (db *MysqlDriver) GetList(tableName string, query map[string]interface{}, orderBy string) ([]map[string]interface{}, error) {
 	s := "select * from " + tableName + " "
-	if !checkOrderBy(orderBy) {
+	if !CheckOrderBy(orderBy) {
 		orderBy = ""
 	}
 	where, _ := db.WhereFromQuery(query)
@@ -141,7 +141,7 @@ func (db *MysqlDriver) GetPage(tableName string, query map[string]interface{}, o
 	}
 	offset := (page - 1) * size
 	s := "select * from " + tableName + " "
-	if !checkOrderBy(orderBy) {
+	if !CheckOrderBy(orderBy) {
 		orderBy = ""
 	}
 	where, _ := db.WhereFromQuery(query)
@@ -285,9 +285,9 @@ func (db *MysqlDriver) GetInsertSql(tableName string, post map[string]interface{
 	s, colums, values := "", "", ""
 	split := ""
 	for k, v := range post {
-		if isSimpleType(v) {
+		if IsSimpleType(v) {
 			colums += split + k
-			s += split + sqlQuote(v)
+			s += split + SqlQuote(v)
 			split = ", "
 		}
 	}
@@ -301,8 +301,8 @@ func (db *MysqlDriver) GetUpdateSQL(tableName string, post map[string]interface{
 	s := ""
 	split := "update " + tableName + " set "
 	for k, v := range post {
-		if isSimpleType(v) {
-			s += split + " " + k + "=" + sqlQuote(v)
+		if IsSimpleType(v) {
+			s += split + " " + k + "=" + SqlQuote(v)
 			split = ", "
 		}
 	}
@@ -313,8 +313,8 @@ func (db *MysqlDriver) WhereFromQuery(query map[string]interface{}) (string, err
 	s := ""
 	split := " where "
 	for k, v := range query {
-		if isSimpleType(v) {
-			s += split + " " + k + "=" + sqlQuote(v)
+		if IsSimpleType(v) {
+			s += split + " " + k + "=" + SqlQuote(v)
 			split = " and "
 		}
 	}

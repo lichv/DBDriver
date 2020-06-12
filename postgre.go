@@ -63,7 +63,7 @@ func (db *PostgresDriver) QueryMap(tableName string, query map[string]interface{
 }
 func (db *PostgresDriver) FindById(tableName string, id int, orderBy string) (map[string]interface{}, error) {
 	s := "select * from " + tableName
-	if !checkOrderBy(orderBy) {
+	if !CheckOrderBy(orderBy) {
 		orderBy = ""
 	}
 
@@ -77,7 +77,7 @@ func (db *PostgresDriver) FindById(tableName string, id int, orderBy string) (ma
 }
 func (db *PostgresDriver) FindOne(tableName string, query map[string]interface{}, orderBy string) (map[string]interface{}, error) {
 	s := "select * from " + tableName + " "
-	if !checkOrderBy(orderBy) {
+	if !CheckOrderBy(orderBy) {
 		orderBy = ""
 	}
 	where, _ := db.WhereFromQuery(query)
@@ -117,7 +117,7 @@ func (db *PostgresDriver) Count(tableName string, query map[string]interface{}) 
 }
 func (db *PostgresDriver) GetList(tableName string, query map[string]interface{}, orderBy string) ([]map[string]interface{}, error) {
 	s := "select * from " + tableName + " "
-	if !checkOrderBy(orderBy) {
+	if !CheckOrderBy(orderBy) {
 		orderBy = ""
 	}
 	where, _ := db.WhereFromQuery(query)
@@ -140,7 +140,7 @@ func (db *PostgresDriver) GetPage(tableName string, query map[string]interface{}
 	}
 	offset := (page - 1) * size
 	s := "select * from " + tableName + " "
-	if !checkOrderBy(orderBy) {
+	if !CheckOrderBy(orderBy) {
 		orderBy = ""
 	}
 	where, _ := db.WhereFromQuery(query)
@@ -289,9 +289,9 @@ func (db *PostgresDriver) GetInsertSql(tableName string, post map[string]interfa
 	s, columns, values := "", "", ""
 	split := ""
 	for k, v := range post {
-		if isSimpleType(v) {
+		if IsSimpleType(v) {
 			columns += split + k
-			values += split + sqlQuote(v)
+			values += split + SqlQuote(v)
 			split = ", "
 		}
 	}
@@ -305,8 +305,8 @@ func (db *PostgresDriver) GetUpdateSQL(tableName string, post map[string]interfa
 	s := ""
 	split := "update " + tableName + " set "
 	for k, v := range post {
-		if isSimpleType(v) {
-			s += split + " " + k + "=" + sqlQuote(v)
+		if IsSimpleType(v) {
+			s += split + " " + k + "=" + SqlQuote(v)
 			split = ", "
 		}
 	}
@@ -317,8 +317,8 @@ func (db *PostgresDriver) WhereFromQuery(query map[string]interface{}) (string, 
 	s := ""
 	split := " where "
 	for k, v := range query {
-		if isSimpleType(v) {
-			s += split + " " + k + "=" + sqlQuote(v)
+		if IsSimpleType(v) {
+			s += split + " " + k + "=" + SqlQuote(v)
 			split = " and "
 		}
 	}
