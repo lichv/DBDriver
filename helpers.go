@@ -72,7 +72,7 @@ func GetInsertSql(tableName string, post map[string]interface{}) (string, error)
 	for k, v := range post {
 		if IsSimpleType(v) {
 			columns += split + k
-			s += split + SqlQuote(v)
+			values += split + SqlQuote(v)
 			split = ", "
 		}
 	}
