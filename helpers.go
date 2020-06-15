@@ -10,13 +10,13 @@ import (
 )
 
 type Page struct {
-	First int
-	Prev  int
-	Page  int
-	Next  int
-	Last  int
-	Size  int
-	Total int
+	First int64
+	Prev  int64
+	Page  int64
+	Next  int64
+	Last  int64
+	Size  int64
+	Total int64
 }
 
 type DBDriver interface {
@@ -25,17 +25,17 @@ type DBDriver interface {
 	Query() (*sql.Rows, error)
 	Exec() (sql.Result, error)
 	QueryMap(string, map[string]interface{}) ([]map[string]interface{}, error)
-	FindById(string, int) (map[string]interface{}, error)
+	FindById(string, int64) (map[string]interface{}, error)
 	FindOne(string, map[string]interface{}, string) (map[string]interface{}, error)
 	Exists(string, map[string]interface{}) bool
-	Count(string, map[string]interface{}) (int, error)
+	Count(string, map[string]interface{}) (int64, error)
 	GetList(string, map[string]interface{}, string) ([]map[string]interface{}, error)
-	GetPage(string, map[string]interface{}, string, int, int) ([]map[string]interface{}, *Page, error)
+	GetPage(string, map[string]interface{}, string, int64, int64) ([]map[string]interface{}, *Page, error)
 	Insert(string, map[string]interface{}) (int64, error)
 	Update(string, map[string]interface{}, map[string]interface{}) (int64, error)
 	Save(string, map[string]interface{}) (int64, error)
 	Delete(string, map[string]interface{}) (int64, error)
-	DeleteById(string, int) (int64, error)
+	DeleteById(string, int64) (int64, error)
 	Begin() error
 	RollBack() error
 	Commit() error
