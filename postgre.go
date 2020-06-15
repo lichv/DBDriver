@@ -67,7 +67,7 @@ func (db *PostgresDriver) QueryMap(tableName string, query map[string]interface{
 }
 
 func (db *PostgresDriver) FindById(tableName string, id int64) (*sql.Rows, error) {
-	s := "select * from " + tableName + " where id = ? limit 1 "
+	s := "select * from " + tableName + " where id = $1 limit 1 "
 	rows, err := db.Query(s,id)
 	if err != nil {
 
@@ -126,8 +126,8 @@ func (db *PostgresDriver) GetPage(tableName string, query map[string]interface{}
 	if orderBy != "" {
 		sql2 += " order by " + orderBy
 	}
-	sql2 += " limit " + strconv.Itoa(int(size)) + " offset " + strconv.Itoa(int(offset))
-	rows, err := db.DB.Query(sql2)
+	sql2 += " limit $1 offset $2"
+	rows, err := db.DB.Query(sql2,size,offset)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -202,7 +202,7 @@ func (db *PostgresDriver) Delete(tableName string, query map[string]interface{})
 
 func (db *PostgresDriver) DeleteById(tableName string, id int64) (int64, error) {
 	if id != 0 {
-		s := "delete from " + tableName + " where id = ?"
+		s := "delete from " + tableName + " where id = $1"
 		exec, err := db.DB.Exec(s, id)
 		if err != nil {
 			return 0, err
