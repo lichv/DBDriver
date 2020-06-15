@@ -55,6 +55,7 @@ func (db *PostgresDriver) HidenSql() {
 func (db *PostgresDriver) Query(query string, args ...interface{}) (*sql.Rows, error) {
 	if db.Show {
 		fmt.Println(query)
+		fmt.Println(args...)
 	}
 	return db.DB.Query(query, args...)
 }
@@ -62,6 +63,7 @@ func (db *PostgresDriver) Query(query string, args ...interface{}) (*sql.Rows, e
 func (db *PostgresDriver) Exec(query string, args ...interface{}) (sql.Result, error) {
 	if db.Show {
 		fmt.Println(query)
+		fmt.Println(args...)
 	}
 	return db.DB.Exec(query, args...)
 }
@@ -84,6 +86,7 @@ func (db *PostgresDriver) FindById(tableName string, id int64) (*sql.Rows, error
 	s := "select * from " + tableName + " where id = $1 limit 1 "
 	if db.Show {
 		fmt.Println(s)
+		fmt.Println(id)
 	}
 	rows, err := db.Query(s, id)
 	if err != nil {
@@ -152,6 +155,7 @@ func (db *PostgresDriver) GetPage(tableName string, query map[string]interface{}
 	sql2 += " limit $1 offset $2"
 	if db.Show {
 		fmt.Println(sql2)
+		fmt.Println(size,offset)
 	}
 	rows, err := db.DB.Query(sql2, size, offset)
 	if err != nil {
@@ -243,6 +247,7 @@ func (db *PostgresDriver) DeleteById(tableName string, id int64) (int64, error) 
 		s := "delete from " + tableName + " where id = $1"
 		if db.Show {
 			fmt.Println(s)
+			fmt.Println(id)
 		}
 		exec, err := db.DB.Exec(s, id)
 		if err != nil {
