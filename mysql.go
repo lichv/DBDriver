@@ -64,22 +64,18 @@ func (db *MysqlDriver) QueryMap(tableName string, query map[string]interface{}) 
 		return nil, err
 	}
 
-	return rows,nil
+	return rows, nil
 }
 
-func (db *MysqlDriver) FindById(tableName string, id int, orderBy string) (*sql.Rows, error) {
+func (db *MysqlDriver) FindById(tableName string, id int) (*sql.Rows, error) {
 	s := "select * from " + tableName
-	if !CheckOrderBy(orderBy) {
-		orderBy = ""
-	}
-
-	s += "where id =" + strconv.Itoa(id) + " limit 1 " + orderBy
+	s += "where id =" + strconv.Itoa(id) + " limit 1 "
 	rows, err := db.Query(s)
 	if err != nil {
 
 		return nil, err
 	}
-	return rows,nil
+	return rows, nil
 }
 
 func (db *MysqlDriver) FindOne(tableName string, query map[string]interface{}, orderBy string) (*sql.Rows, error) {
@@ -92,7 +88,7 @@ func (db *MysqlDriver) FindOne(tableName string, query map[string]interface{}, o
 	if err != nil {
 		return nil, err
 	}
-	return rows,nil
+	return rows, nil
 }
 
 func (db *MysqlDriver) GetList(tableName string, query map[string]interface{}, orderBy string) (*sql.Rows, error) {
@@ -105,7 +101,7 @@ func (db *MysqlDriver) GetList(tableName string, query map[string]interface{}, o
 	if err != nil {
 		return nil, err
 	}
-	return rows,nil
+	return rows, nil
 }
 
 func (db *MysqlDriver) GetPage(tableName string, query map[string]interface{}, orderBy string, page, size int) (*sql.Rows, *Page, error) {

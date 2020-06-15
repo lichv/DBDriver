@@ -25,7 +25,7 @@ type DBDriver interface {
 	Query() (*sql.Rows, error)
 	Exec() (sql.Result, error)
 	QueryMap(string, map[string]interface{}) ([]map[string]interface{}, error)
-	FindById(string, int, string) (map[string]interface{}, error)
+	FindById(string, int) (map[string]interface{}, error)
 	FindOne(string, map[string]interface{}, string) (map[string]interface{}, error)
 	Exists(string, map[string]interface{}) bool
 	Count(string, map[string]interface{}) (int, error)

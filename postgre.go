@@ -64,22 +64,18 @@ func (db *PostgresDriver) QueryMap(tableName string, query map[string]interface{
 		return nil, err
 	}
 
-	return rows,nil
+	return rows, nil
 }
 
-func (db *PostgresDriver) FindById(tableName string, id int, orderBy string) (*sql.Rows, error) {
+func (db *PostgresDriver) FindById(tableName string, id int) (*sql.Rows, error) {
 	s := "select * from " + tableName
-	if !CheckOrderBy(orderBy) {
-		orderBy = ""
-	}
-
-	s += "where id =" + strconv.Itoa(id) + " limit 1 " + orderBy
+	s += "where id =" + strconv.Itoa(id) + " limit 1 "
 	rows, err := db.Query(s)
 	if err != nil {
 
 		return nil, err
 	}
-	return rows,nil
+	return rows, nil
 }
 
 func (db *PostgresDriver) FindOne(tableName string, query map[string]interface{}, orderBy string) (*sql.Rows, error) {
@@ -92,9 +88,8 @@ func (db *PostgresDriver) FindOne(tableName string, query map[string]interface{}
 	if err != nil {
 		return nil, err
 	}
-	return rows,nil
+	return rows, nil
 }
-
 
 func (db *PostgresDriver) GetList(tableName string, query map[string]interface{}, orderBy string) (*sql.Rows, error) {
 	s := "select * from " + tableName + " "
@@ -106,7 +101,7 @@ func (db *PostgresDriver) GetList(tableName string, query map[string]interface{}
 	if err != nil {
 		return nil, err
 	}
-	return rows,nil
+	return rows, nil
 }
 
 func (db *PostgresDriver) GetPage(tableName string, query map[string]interface{}, orderBy string, page, size int) (*sql.Rows, *Page, error) {
