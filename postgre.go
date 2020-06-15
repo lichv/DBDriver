@@ -110,6 +110,8 @@ func (db *PostgresDriver) GetPage(tableName string, query map[string]interface{}
 	prev = 1
 	if page > 2 {
 		prev = page - 1
+	}else{
+		page = 1
 	}
 	next = last
 	if page < last-1 {

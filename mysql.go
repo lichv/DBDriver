@@ -110,6 +110,8 @@ func (db *MysqlDriver) GetPage(tableName string, query map[string]interface{}, o
 	prev = 1
 	if page > 2 {
 		prev = page - int64(1)
+	}else{
+		page = 1
 	}
 	next = last
 	if page < last-1 {
