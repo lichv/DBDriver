@@ -58,8 +58,7 @@ func (db *PostgresDriver) Exec(query string, args ...interface{}) (sql.Result, e
 func (db *PostgresDriver) QueryMap(tableName string, query map[string]interface{}) (*sql.Rows, error) {
 	s := "select * from " + tableName + " "
 	where, _ := WhereFromQuery(query)
-	s += " " + where
-	rows, err := db.Query(s)
+	rows, err := db.Query(s+where)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +67,7 @@ func (db *PostgresDriver) QueryMap(tableName string, query map[string]interface{
 }
 
 func (db *PostgresDriver) FindById(tableName string, id int64) (*sql.Rows, error) {
-	s := "select * from " + tableName + "where id = ? limit 1 "
+	s := "select * from " + tableName + " where id = ? limit 1 "
 	rows, err := db.Query(s,id)
 	if err != nil {
 
@@ -78,7 +77,7 @@ func (db *PostgresDriver) FindById(tableName string, id int64) (*sql.Rows, error
 }
 
 func (db *PostgresDriver) FindOne(tableName string, query map[string]interface{}, orderBy string) (*sql.Rows, error) {
-	s := "select * from " + tableName + " "
+	s := "select * from " + tableName
 	if !CheckOrderBy(orderBy) {
 		orderBy = ""
 	}
@@ -91,7 +90,7 @@ func (db *PostgresDriver) FindOne(tableName string, query map[string]interface{}
 }
 
 func (db *PostgresDriver) GetList(tableName string, query map[string]interface{}, orderBy string) (*sql.Rows, error) {
-	s := "select * from " + tableName + " "
+	s := "select * from " + tableName
 	if !CheckOrderBy(orderBy) {
 		orderBy = ""
 	}
@@ -118,14 +117,14 @@ func (db *PostgresDriver) GetPage(tableName string, query map[string]interface{}
 		next = page + 1
 	}
 	offset := (page - 1) * size
-	s := "select * from " + tableName + " "
+	s := "select * from " + tableName
 	if !CheckOrderBy(orderBy) {
 		orderBy = ""
 	}
 	where, _ := WhereFromQuery(query)
 	sql2 := s + where
 	if orderBy != "" {
-		sql2 += "order by " + orderBy
+		sql2 += " order by " + orderBy
 	}
 	sql2 += " limit " + strconv.Itoa(int(size)) + " offset " + strconv.Itoa(int(offset))
 	rows, err := db.DB.Query(sql2)
@@ -137,7 +136,7 @@ func (db *PostgresDriver) GetPage(tableName string, query map[string]interface{}
 
 func (db *PostgresDriver) Count(tableName string, query map[string]interface{}) (int64, error) {
 	var count int64 = 0
-	s := "select count(1) as number from " + tableName + " "
+	s := "select count(1) as number from " + tableName
 	where, _ := WhereFromQuery(query)
 	rows, err := db.DB.Query(s + where)
 	if err != nil {
