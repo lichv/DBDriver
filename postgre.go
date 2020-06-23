@@ -46,12 +46,17 @@ func (db *PostgresDriver) Open() (err error) {
 func (db *PostgresDriver) Close() error {
 	return db.DB.Close()
 }
-func (db *PostgresDriver) ShowSql() {
+
+func (db *PostgresDriver) ShowSql() error {
 	db.Show = true
+	return nil
 }
-func (db *PostgresDriver) HidenSql() {
+
+func (db *PostgresDriver) HideSql() error {
 	db.Show = false
+	return nil
 }
+
 func (db *PostgresDriver) Query(query string, args ...interface{}) (*sql.Rows, error) {
 	if db.Show {
 		fmt.Println(query)

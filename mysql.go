@@ -46,12 +46,17 @@ func (db *MysqlDriver) Open() (err error) {
 func (db *MysqlDriver) Close() error {
 	return db.DB.Close()
 }
-func (db *MysqlDriver) ShowSql() {
+
+func (db *MysqlDriver) ShowSql() error {
 	db.Show = true
+	return nil
 }
-func (db *MysqlDriver) HidenSql() {
+
+func (db *MysqlDriver) HideSql() error {
 	db.Show = false
+	return nil
 }
+
 func (db *MysqlDriver) Query(query string, args ...interface{}) (*sql.Rows, error) {
 	if db.Show {
 		fmt.Println(query)

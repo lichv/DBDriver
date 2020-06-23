@@ -22,15 +22,17 @@ type Page struct {
 type DBDriver interface {
 	Open() error
 	Close() error
-	Query() (*sql.Rows, error)
-	Exec() (sql.Result, error)
-	QueryMap(string, map[string]interface{}) ([]map[string]interface{}, error)
-	FindById(string, int64) (map[string]interface{}, error)
-	FindOne(string, map[string]interface{}, string) (map[string]interface{}, error)
+	Query(string, ...interface{}) (*sql.Rows, error)
+	Exec(string, ...interface{}) (sql.Result, error)
+	ShowSql() error
+	HideSql() error
+	QueryMap(string, map[string]interface{}) (*sql.Rows, error)
+	FindById(string, int64) (*sql.Rows, error)
+	FindOne(string, map[string]interface{}, string) (*sql.Rows, error)
 	Exists(string, map[string]interface{}) bool
 	Count(string, map[string]interface{}) (int64, error)
-	GetList(string, map[string]interface{}, string) ([]map[string]interface{}, error)
-	GetPage(string, map[string]interface{}, string, int64, int64) ([]map[string]interface{}, *Page, error)
+	GetList(string, map[string]interface{}, string) (*sql.Rows, error)
+	GetPage(string, map[string]interface{}, string, int64, int64) (*sql.Rows, *Page, error)
 	Insert(string, map[string]interface{}) (int64, error)
 	Update(string, map[string]interface{}, map[string]interface{}) (int64, error)
 	Save(string, map[string]interface{}) (int64, error)
@@ -39,11 +41,21 @@ type DBDriver interface {
 	Begin() error
 	RollBack() error
 	Commit() error
-	QueryTx(string, ...interface{}) (*sql.Rows, error)
-	ExecTx(string, ...interface{}) (sql.Result, error)
-	GetInsertSql(string, map[string]interface{}) (string, error)
-	GetUpdateSql(string, map[string]interface{}, map[string]interface{}) (string, error)
-	WhereFromQuery(map[string]interface{}) (string, error)
+	QueryTX(string, ...interface{}) (*sql.Rows, error)
+	ExecTX(string, ...interface{}) (sql.Result, error)
+}
+
+func CreateDBDriver(driverName string,host string, port int, user, password, dbname string) DBDriver {
+	var dbDriver DBDriver
+	if driverName =="mysql"{
+		my := InitMysqlDriver(host,port,user,password,dbname)
+		dbDriver = interface{}(my).(DBDriver)
+	}else if driverName == "postgres"{
+		po := InitPostgreDriver(host,port,user,password,dbname)
+		dbDriver = interface{}(po).(DBDriver)
+	}
+
+	return dbDriver
 }
 
 func CheckOrderBy(orderBy string) bool {
@@ -95,6 +107,7 @@ func GetUpdateSQL(tableName string, post map[string]interface{}, query map[strin
 }
 func ReturnMapFromResult(rows *sql.Rows) (map[string]interface{}, error) {
 	var err error
+	defer rows.Close()
 	columns, _ := rows.Columns()
 	scanArgs := make([]interface{}, len(columns))
 	values := make([]interface{}, len(columns))
@@ -106,6 +119,10 @@ func ReturnMapFromResult(rows *sql.Rows) (map[string]interface{}, error) {
 		err = rows.Scan(scanArgs...)
 		rowMap := make(map[string]interface{})
 		for i, col := range values {
+			c ,ok := col.([]uint8)
+			if ok {
+				col = string(c)
+			}
 			if col != nil {
 				rowMap[columns[i]] = col
 			}
@@ -115,11 +132,11 @@ func ReturnMapFromResult(rows *sql.Rows) (map[string]interface{}, error) {
 	if err = rows.Err(); err != nil {
 		return map[string]interface{}{}, err
 	}
-	_ = rows.Close()
 	return rowsMap[0], nil
 }
 func ReturnListFromResults(rows *sql.Rows) ([]map[string]interface{}, error) {
 	var err error
+	defer rows.Close()
 	columns, _ := rows.Columns()
 	scanArgs := make([]interface{}, len(columns))
 	values := make([]interface{}, len(columns))
@@ -131,6 +148,10 @@ func ReturnListFromResults(rows *sql.Rows) ([]map[string]interface{}, error) {
 		err = rows.Scan(scanArgs...)
 		rowMap := make(map[string]interface{})
 		for i, col := range values {
+			c ,ok := col.([]uint8)
+			if ok {
+				col = string(c)
+			}
 			if col != nil {
 				rowMap[columns[i]] = col
 			}
@@ -140,7 +161,6 @@ func ReturnListFromResults(rows *sql.Rows) ([]map[string]interface{}, error) {
 	if err = rows.Err(); err != nil {
 		return []map[string]interface{}{}, err
 	}
-	_ = rows.Close()
 	return rowsMap, nil
 }
 func SqlQuote(x interface{}) string {
