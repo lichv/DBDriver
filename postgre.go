@@ -74,7 +74,7 @@ func (db *PostgresDriver) Exec(query string, args ...interface{}) (sql.Result, e
 }
 
 func (db *PostgresDriver) QueryMap(tableName string, query map[string]interface{}) (*sql.Rows, error) {
-	s := "select * from " + tableName + " "
+	s := "select * from \"" + tableName + "\" "
 	where, _ := WhereFromQuery(query)
 	if db.Show {
 		fmt.Println(s + where)
@@ -88,7 +88,7 @@ func (db *PostgresDriver) QueryMap(tableName string, query map[string]interface{
 }
 
 func (db *PostgresDriver) FindById(tableName string, id int64) (*sql.Rows, error) {
-	s := "select * from " + tableName + " where id = $1 limit 1 "
+	s := "select * from \"" + tableName + "\" where id = $1 limit 1 "
 	if db.Show {
 		fmt.Println(s)
 		fmt.Println(id)
@@ -102,7 +102,7 @@ func (db *PostgresDriver) FindById(tableName string, id int64) (*sql.Rows, error
 }
 
 func (db *PostgresDriver) FindOne(tableName string, query map[string]interface{}, orderBy string) (*sql.Rows, error) {
-	s := "select * from " + tableName
+	s := "select * from \"" + tableName + "\""
 	if !CheckOrderBy(orderBy) {
 		orderBy = ""
 	}
@@ -118,7 +118,7 @@ func (db *PostgresDriver) FindOne(tableName string, query map[string]interface{}
 }
 
 func (db *PostgresDriver) GetList(tableName string, query map[string]interface{}, orderBy string) (*sql.Rows, error) {
-	s := "select * from " + tableName
+	s := "select * from \"" + tableName + "\""
 	if !CheckOrderBy(orderBy) {
 		orderBy = ""
 	}
@@ -171,7 +171,7 @@ func (db *PostgresDriver) GetPage(tableName string, query map[string]interface{}
 
 func (db *PostgresDriver) Count(tableName string, query map[string]interface{}) (int64, error) {
 	var count int64 = 0
-	s := "select count(1) as number from " + tableName
+	s := "select count(1) as number from \"" + tableName+ "\""
 	where, _ := WhereFromQuery(query)
 	if db.Show {
 		fmt.Println(s + where)
@@ -233,7 +233,7 @@ func (db *PostgresDriver) Save(tableName string, post map[string]interface{}) (i
 func (db *PostgresDriver) Delete(tableName string, query map[string]interface{}) (int64, error) {
 	where, _ := WhereFromQuery(query)
 	if where != "" {
-		s := "delete from " + tableName + where
+		s := "delete from \"" + tableName + "\" " + where
 		if db.Show {
 			fmt.Println(s)
 		}
@@ -249,7 +249,7 @@ func (db *PostgresDriver) Delete(tableName string, query map[string]interface{})
 
 func (db *PostgresDriver) DeleteById(tableName string, id int64) (int64, error) {
 	if id != 0 {
-		s := "delete from " + tableName + " where id = $1"
+		s := "delete from \"" + tableName + "\" where id = $1"
 		if db.Show {
 			fmt.Println(s)
 			fmt.Println(id)
