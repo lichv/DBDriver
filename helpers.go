@@ -10,13 +10,13 @@ import (
 )
 
 type Page struct {
-	First int64
-	Prev  int64
-	Page  int64
-	Next  int64
-	Last  int64
-	Size  int64
-	Total int64
+	First int64 `json:"first"`
+	Prev  int64 `json:"prev"`
+	Page  int64 `json:"page"`
+	Next  int64 `json:"next"`
+	Last  int64 `json:"last"`
+	Size  int64 `json:"size"`
+	Total int64 `json:"total"`
 }
 
 type DBDriver interface {
