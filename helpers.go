@@ -74,6 +74,48 @@ func WhereFromQuery(query map[string]interface{}) (string, error) {
 		if IsSimpleType(v) {
 			s += split + " " + k + "=" + SqlQuote(v)
 			split = " and "
+		}else if reflect.TypeOf(v).Kind() == reflect.Map {
+			m,ok:= v.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			operater,ok := m["operater"]
+			if !ok {
+				continue
+			}
+			switch operater {
+			case "=":
+			case "!=":
+			case ">":
+			case ">=":
+			case "<":
+			case "<=":
+				value,ok := m["value"]
+				if !ok {
+					continue
+				}
+				o,ok := operater.(string)
+				if ok {
+					v,ok := value.(string)
+					if ok {
+						s += split + " " + k + " " + o  + SqlQuote(v)
+						split = " and "
+					}
+				}
+			case "like":
+				value,ok := m["value"]
+				if !ok {
+					continue
+				}
+				o,ok := operater.(string)
+				if ok {
+					v,ok := value.(string)
+					if ok {
+						s += split + " " + k + " " + o + SqlQuote("%"+v+"%")
+						split = " and "
+					}
+				}
+			}
 		}
 	}
 	return s, nil
