@@ -45,13 +45,13 @@ type DBDriver interface {
 	ExecTX(string, ...interface{}) (sql.Result, error)
 }
 
-func CreateDBDriver(driverName string,host string, port int, user, password, dbname string) DBDriver {
+func CreateDBDriver(driverName string, host string, port int, user, password, dbname string) DBDriver {
 	var dbDriver DBDriver
-	if driverName =="mysql"{
-		my := InitMysqlDriver(host,port,user,password,dbname)
+	if driverName == "mysql" {
+		my := InitMysqlDriver(host, port, user, password, dbname)
 		dbDriver = interface{}(my).(DBDriver)
-	}else if driverName == "postgres"{
-		po := InitPostgreDriver(host,port,user,password,dbname)
+	} else if driverName == "postgres" {
+		po := InitPostgreDriver(host, port, user, password, dbname)
 		dbDriver = interface{}(po).(DBDriver)
 	}
 
@@ -74,12 +74,12 @@ func WhereFromQuery(query map[string]interface{}) (string, error) {
 		if IsSimpleType(v) {
 			s += split + " " + k + "=" + SqlQuote(v)
 			split = " and "
-		}else if reflect.TypeOf(v).Kind() == reflect.Map {
-			m,ok:= v.(map[string]interface{})
+		} else if reflect.TypeOf(v).Kind() == reflect.Map {
+			m, ok := v.(map[string]interface{})
 			if !ok {
 				continue
 			}
-			operater,ok := m["operater"]
+			operater, ok := m["operater"]
 			if !ok {
 				continue
 			}
@@ -90,28 +90,36 @@ func WhereFromQuery(query map[string]interface{}) (string, error) {
 			case ">=":
 			case "<":
 			case "<=":
-				value,ok := m["value"]
+				value, ok := m["value"]
 				if !ok {
 					continue
 				}
-				o,ok := operater.(string)
+				o, ok := operater.(string)
 				if ok {
-					v,ok := value.(string)
+					v, ok := value.(string)
 					if ok {
-						s += split + " " + k + " " + o  + " " + SqlQuote(v)
+						s += split + " " + k + " " + o + " " + SqlQuote(v)
 						split = " and "
 					}
 				}
 			case "like":
-				value,ok := m["value"]
+				value, ok := m["value"]
 				if !ok {
 					continue
 				}
-				o,ok := operater.(string)
+				o, ok := operater.(string)
 				if ok {
-					v,ok := value.(string)
+					v, ok := value.(string)
 					if ok {
-						s += split + " " + k + " " + o + " "+ SqlQuote("%"+v+"%")
+						s += split + " " + k + " " + o + " " + SqlQuote("%"+v+"%")
+						split = " and "
+					}
+				}
+			case "between":
+				if reflect.TypeOf(v).Kind() == reflect.Slice {
+					va, ok := v.([]interface{})
+					if ok && len(va) == 2 {
+						s += split + " " + k + " between " + SqlQuote(va[0]) + " and " + SqlQuote(va[1])
 						split = " and "
 					}
 				}
@@ -161,7 +169,7 @@ func ReturnMapFromResult(rows *sql.Rows) (map[string]interface{}, error) {
 		err = rows.Scan(scanArgs...)
 		rowMap := make(map[string]interface{})
 		for i, col := range values {
-			c ,ok := col.([]uint8)
+			c, ok := col.([]uint8)
 			if ok {
 				col = string(c)
 			}
@@ -190,7 +198,7 @@ func ReturnListFromResults(rows *sql.Rows) ([]map[string]interface{}, error) {
 		err = rows.Scan(scanArgs...)
 		rowMap := make(map[string]interface{})
 		for i, col := range values {
-			c ,ok := col.([]uint8)
+			c, ok := col.([]uint8)
 			if ok {
 				col = string(c)
 			}
