@@ -98,7 +98,7 @@ func WhereFromQuery(query map[string]interface{}) (string, error) {
 				if ok {
 					v,ok := value.(string)
 					if ok {
-						s += split + " " + k + " " + o  + SqlQuote(v)
+						s += split + " " + k + " " + o  + " " + SqlQuote(v)
 						split = " and "
 					}
 				}
@@ -111,7 +111,7 @@ func WhereFromQuery(query map[string]interface{}) (string, error) {
 				if ok {
 					v,ok := value.(string)
 					if ok {
-						s += split + " " + k + " " + o + SqlQuote("%"+v+"%")
+						s += split + " " + k + " " + o + " "+ SqlQuote("%"+v+"%")
 						split = " and "
 					}
 				}
