@@ -148,7 +148,7 @@ func (db *PostgresDriver) GetPage(tableName string, query map[string]interface{}
 		next = page + 1
 	}
 	offset := (page - 1) * size
-	s := "select * from " + tableName
+	s := "select * from \"" + tableName + "\""
 	if !CheckOrderBy(orderBy) {
 		orderBy = ""
 	}
