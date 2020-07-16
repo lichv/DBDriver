@@ -139,13 +139,13 @@ func GetInsertSql(tableName string, post map[string]interface{}) (string, error)
 		}
 	}
 	if columns != "" {
-		s = "insert into " + tableName + "(" + columns + ") values (" + values + ")"
+		s = "insert into \"" + tableName + "\" (" + columns + ") values (" + values + ")"
 	}
 	return s, nil
 }
 func GetUpdateSQL(tableName string, post map[string]interface{}, query map[string]interface{}) (string, error) {
 	s := ""
-	split := "update " + tableName + " set "
+	split := "update \"" + tableName + "\" set "
 	for k, v := range post {
 		if IsSimpleType(v) {
 			s += split + " " + k + "=" + SqlQuote(v)
