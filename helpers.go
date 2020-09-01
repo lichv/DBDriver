@@ -214,6 +214,9 @@ func ReturnListFromResults(rows *sql.Rows) ([]map[string]interface{}, error) {
 	return rowsMap, nil
 }
 func SqlQuote(x interface{}) string {
+	if x == nil {
+		return ""
+	}
 	if NoSqlQuoteNeeded(x) {
 		return fmt.Sprintf("%v", x)
 	} else {
