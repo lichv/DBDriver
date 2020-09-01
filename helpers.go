@@ -215,7 +215,7 @@ func ReturnListFromResults(rows *sql.Rows) ([]map[string]interface{}, error) {
 }
 func SqlQuote(x interface{}) string {
 	if x == nil {
-		return ""
+		return "''"
 	}
 	if NoSqlQuoteNeeded(x) {
 		return fmt.Sprintf("%v", x)
@@ -239,6 +239,9 @@ func IsSimpleType(a interface{}) bool {
 	}
 
 	t := reflect.TypeOf(a)
+	if t == nil {
+		return false
+	}
 
 	switch t.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
@@ -272,6 +275,9 @@ func NoSqlQuoteNeeded(a interface{}) bool {
 	}
 
 	t := reflect.TypeOf(a)
+	if t == nil {
+		return false
+	}
 
 	switch t.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
