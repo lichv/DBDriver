@@ -128,7 +128,7 @@ func WhereFromQuery(query map[string]interface{}) (string, error) {
 	}
 	return s, nil
 }
-func GetInsertSql(tableName string, post map[string]interface{}) (string, error) {
+func GetInsertSql(tableName string, post map[string]interface{},driverName string) (string, error) {
 	s, columns, values := "", "", ""
 	split := ""
 	for k, v := range post {
@@ -139,13 +139,22 @@ func GetInsertSql(tableName string, post map[string]interface{}) (string, error)
 		}
 	}
 	if columns != "" {
-		s = "insert into \"" + tableName + "\" (" + columns + ") values (" + values + ")"
+		if driverName == "mysql"{
+			s = "insert into `" + tableName + "` (" + columns + ") values (" + values + ")"
+		}else{
+			s = "insert into \"" + tableName + "\" (" + columns + ") values (" + values + ")"
+		}
 	}
 	return s, nil
 }
-func GetUpdateSQL(tableName string, post map[string]interface{}, query map[string]interface{}) (string, error) {
+func GetUpdateSQL(tableName string, post map[string]interface{}, query map[string]interface{},driverName string) (string, error) {
 	s := ""
-	split := "update \"" + tableName + "\" set "
+	split := ""
+	if driverName == "mysql" {
+		split = "update `" + tableName + "` set "
+	}else{
+		split = "update \"" + tableName + "\" set "
+	}
 	for k, v := range post {
 		if IsSimpleType(v) {
 			s += split + " " + k + "=" + SqlQuote(v)

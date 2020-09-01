@@ -196,7 +196,7 @@ func (db *PostgresDriver) Exists(tableName string, query map[string]interface{})
 
 func (db *PostgresDriver) Insert(tableName string, post map[string]interface{}) (int64, error) {
 	var newId int64
-	s, _ := GetInsertSql(tableName, post)
+	s, _ := GetInsertSql(tableName, post,"postgres")
 	if db.Show {
 		fmt.Println(s)
 	}
@@ -209,7 +209,7 @@ func (db *PostgresDriver) Insert(tableName string, post map[string]interface{}) 
 }
 
 func (db *PostgresDriver) Update(tableName string, post map[string]interface{}, query map[string]interface{}) (int64, error) {
-	s, _ := GetUpdateSQL(tableName, post, query)
+	s, _ := GetUpdateSQL(tableName, post, query,"postgres")
 	if db.Show {
 		fmt.Println(s)
 	}

@@ -195,7 +195,7 @@ func (db *MysqlDriver) Exists(tableName string, query map[string]interface{}) bo
 }
 
 func (db *MysqlDriver) Insert(tableName string, post map[string]interface{}) (int64, error) {
-	s, _ := GetInsertSql(tableName, post)
+	s, _ := GetInsertSql(tableName, post,"mysql")
 	if db.Show {
 		fmt.Println(s)
 	}
@@ -207,7 +207,7 @@ func (db *MysqlDriver) Insert(tableName string, post map[string]interface{}) (in
 }
 
 func (db *MysqlDriver) Update(tableName string, post map[string]interface{}, query map[string]interface{}) (int64, error) {
-	s, _ := GetUpdateSQL(tableName, post, query)
+	s, _ := GetUpdateSQL(tableName, post, query,"mysql")
 	if db.Show {
 		fmt.Println(s)
 	}
